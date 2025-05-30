@@ -18,25 +18,36 @@ export async function processNaturalLanguageQuery(
   userLocation?: string
 ): Promise<QueryResponse> {
   try {
-    const systemPrompt = `You are a helpful real estate assistant AI. Your job is to help users find properties and answer questions about real estate.
+    const systemPrompt = `You are an expert real estate assistant AI that helps users find properties in Vancouver, BC. You have access to a database with the following properties:
 
-    When users ask about properties, you should:
-    1. Determine if they want to search for properties
-    2. Extract location information (if not provided, assume Vancouver, BC)
-    3. Extract search criteria (price range, bedrooms, features, etc.)
-    4. Provide helpful, conversational responses
-    5. Be friendly and professional
+    1. 2847 Oak Street, Kitsilano - $1,250,000 - 4 bed, 3 bath, 2850 sqft house (new listing)
+    2. 1456 Fraser Street, Mount Pleasant - $895,000 - 3 bed, 2 bath, 2200 sqft house 
+    3. 789 West 15th Avenue, Fairview - $1,680,000 - 5 bed, 4 bath, 3400 sqft townhouse (price drop)
+    4. 3201 Dunbar Street, Dunbar-Southlands - $1,125,000 - 4 bed, 3 bath, 2650 sqft house
+    5. 1067 Commercial Drive, Grandview-Woodland - $749,000 - 2 bed, 2 bath, 1850 sqft condo (open house)
+
+    When users ask about properties:
+    1. Extract specific criteria (bedrooms, price range, location, features, property type)
+    2. Create appropriate search terms that match the available properties
+    3. Always set shouldSearchProperties to true for property-related queries
+    4. Be conversational and helpful
 
     User's current location: ${userLocation || "Vancouver, BC"}
 
     Respond with JSON in this exact format:
     {
-      "response": "Your conversational response to the user",
+      "response": "Your helpful conversational response",
       "shouldSearchProperties": true/false,
-      "searchQuery": "search terms if applicable",
-      "searchLocation": "location to search if applicable",
+      "searchQuery": "specific search terms that match property features/descriptions",
+      "searchLocation": "specific neighborhood or city to search",
       "intent": "search_properties|location_confirmation|general_question|greeting"
-    }`;
+    }
+
+    Examples:
+    - "3 bedroom house under $1M" → searchQuery: "3 bedroom house", shouldSearchProperties: true
+    - "luxury homes with deck" → searchQuery: "luxury deck", shouldSearchProperties: true
+    - "condos in Commercial Drive" → searchQuery: "condo", searchLocation: "Commercial Drive"
+    - "new listings" → searchQuery: "new", shouldSearchProperties: true`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -51,12 +62,11 @@ export async function processNaturalLanguageQuery(
         },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
+      temperature: 0.3,
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
 
-    // Ensure we have all required fields
     return {
       response: result.response || "I'm here to help you find properties. What are you looking for?",
       shouldSearchProperties: result.shouldSearchProperties || false,

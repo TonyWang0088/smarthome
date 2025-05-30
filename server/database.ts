@@ -19,7 +19,7 @@ import {
   type SearchQuery,
   type InsertSearchQuery
 } from "@shared/schema";
-import { eq, like, and, desc } from "drizzle-orm";
+import { eq, like, and, or, desc } from "drizzle-orm";
 
 // Initialize SQLite database
 const sqlite = new Database("database.sqlite");
@@ -285,13 +285,30 @@ export class DatabaseStorage {
       const locationTerm = `%${location.toLowerCase()}%`;
       results = db.select().from(properties).where(
         and(
-          like(properties.description, searchTerm),
-          like(properties.city, locationTerm)
+          or(
+            like(properties.description, searchTerm),
+            like(properties.features, searchTerm),
+            like(properties.neighborhood, searchTerm),
+            like(properties.address, searchTerm),
+            like(properties.propertyType, searchTerm),
+            like(properties.status, searchTerm)
+          ),
+          or(
+            like(properties.city, locationTerm),
+            like(properties.neighborhood, locationTerm)
+          )
         )
       ).all();
     } else {
       results = db.select().from(properties).where(
-        like(properties.description, searchTerm)
+        or(
+          like(properties.description, searchTerm),
+          like(properties.features, searchTerm),
+          like(properties.neighborhood, searchTerm),
+          like(properties.address, searchTerm),
+          like(properties.propertyType, searchTerm),
+          like(properties.status, searchTerm)
+        )
       ).all();
     }
 

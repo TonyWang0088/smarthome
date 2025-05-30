@@ -2,14 +2,22 @@ import { useState } from "react";
 import ChatSidebar from "@/components/chat-sidebar";
 import PropertyGrid from "@/components/property-grid";
 import PropertyModal from "@/components/property-modal";
+import SearchBar from "@/components/search-bar";
 import { Property } from "@shared/schema";
 import { Home as HomeIcon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useChat } from "@/hooks/use-chat";
 
 export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchResults, setSearchResults] = useState<Property[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Get location info for search bar
+  const { userLocation, isDetectingLocation } = useChat({
+    sessionId: "home-session",
+    onPropertiesFound: setSearchResults,
+  });
 
   return (
     <div className="min-h-screen bg-neutral">
@@ -43,7 +51,18 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      {/* Search Bar Section */}
+      <div className="bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SearchBar 
+            onSearchResults={setSearchResults}
+            userLocation={userLocation}
+            isDetectingLocation={isDetectingLocation}
+          />
+        </div>
+      </div>
+
+      <div className="flex h-[calc(100vh-12rem)]">
         {/* Chat Sidebar */}
         <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:block w-full md:w-96 bg-white border-r border-gray-200`}>
           <ChatSidebar 
