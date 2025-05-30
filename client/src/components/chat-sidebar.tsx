@@ -15,7 +15,7 @@ export default function ChatSidebar({ onPropertiesFound, onMobileMenuClose }: Ch
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { messages, sendMessage, isLoading } = useChat({
+  const { messages, sendMessage, isLoading, userLocation, isDetectingLocation } = useChat({
     onPropertiesFound,
     sessionId: "default-session", // In a real app, this would be user-specific
   });
@@ -64,6 +64,11 @@ export default function ChatSidebar({ onPropertiesFound, onMobileMenuClose }: Ch
           AI Assistant
         </h2>
         <p className="text-sm text-gray-600 mt-1">Ask me anything about properties!</p>
+        {isDetectingLocation ? (
+          <p className="text-xs text-blue-600 mt-1">🌍 Detecting your location...</p>
+        ) : (
+          <p className="text-xs text-gray-500 mt-1">📍 Location: {userLocation}</p>
+        )}
       </div>
 
       {/* Chat Messages */}

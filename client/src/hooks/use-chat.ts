@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChatMessage, Property } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { detectUserLocation, formatLocationString } from "@/lib/geolocation";
 
 interface UseChatProps {
   sessionId: string;
@@ -16,6 +17,27 @@ interface ChatResponse {
 
 export function useChat({ sessionId, onPropertiesFound }: UseChatProps) {
   const [userLocation, setUserLocation] = useState<string>("Vancouver");
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  // Detect user location on component mount
+  useEffect(() => {
+    const detectLocation = async () => {
+      setIsDetectingLocation(true);
+      try {
+        const location = await detectUserLocation();
+        if (location) {
+          const locationString = formatLocationString(location);
+          setUserLocation(locationString);
+        }
+      } catch (error) {
+        console.warn("Location detection failed:", error);
+      } finally {
+        setIsDetectingLocation(false);
+      }
+    };
+
+    detectLocation();
+  }, []);
 
   // Get chat history
   const { data: messages = [] } = useQuery<ChatMessage[]>({
@@ -57,5 +79,6 @@ export function useChat({ sessionId, onPropertiesFound }: UseChatProps) {
     isLoading: sendMessageMutation.isPending,
     userLocation,
     setUserLocation,
+    isDetectingLocation,
   };
 }

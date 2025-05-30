@@ -71,6 +71,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { message, sessionId, userLocation } = chatRequestSchema.parse(req.body);
 
+      // Update session information
+      if (storage.createOrUpdateSession) {
+        await storage.createOrUpdateSession({
+          sessionId,
+          userLocation,
+          detectedLocation: userLocation,
+          ipAddress: req.ip || req.connection.remoteAddress,
+          userAgent: req.get('User-Agent'),
+        });
+      }
+
       // Save user message
       await storage.addChatMessage({
         sessionId,
@@ -97,6 +108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           properties = await storage.getPropertiesByLocation(aiResponse.searchLocation);
         } else if (aiResponse.searchQuery) {
           properties = await storage.searchProperties(aiResponse.searchQuery, userLocation);
+        }
+
+        // Record search query for analytics
+        if (storage.recordSearchQuery) {
+          await storage.recordSearchQuery({
+            sessionId,
+            query: aiResponse.searchQuery || message,
+            location: aiResponse.searchLocation || userLocation,
+            resultsCount: properties.length,
+          });
         }
       }
 
