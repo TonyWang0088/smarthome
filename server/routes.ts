@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertChatMessageSchema } from "@shared/schema";
+import { insertChatMessageSchema, type Property } from "@shared/schema";
 import { processNaturalLanguageQuery } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -24,6 +24,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
+      }
+
+      // Record property view for analytics
+      const sessionId = req.headers['x-session-id'] as string || 'anonymous';
+      if (storage.recordPropertyView) {
+        await storage.recordPropertyView({
+          propertyId: id,
+          sessionId,
+          viewedAt: new Date().toISOString(),
+        });
       }
       
       res.json(property);
@@ -79,6 +89,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           detectedLocation: userLocation,
           ipAddress: req.ip || req.connection.remoteAddress,
           userAgent: req.get('User-Agent'),
+          createdAt: new Date().toISOString(),
+          lastActivity: new Date().toISOString(),
         });
       }
 
@@ -102,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // If AI response includes property search, fetch matching properties
-      let properties = [];
+      let properties: Property[] = [];
       if (aiResponse.shouldSearchProperties) {
         if (aiResponse.searchLocation) {
           properties = await storage.getPropertiesByLocation(aiResponse.searchLocation);
@@ -117,6 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             query: aiResponse.searchQuery || message,
             location: aiResponse.searchLocation || userLocation,
             resultsCount: properties.length,
+            searchedAt: new Date().toISOString(),
           });
         }
       }
