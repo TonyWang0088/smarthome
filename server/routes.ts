@@ -112,14 +112,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isUser: false,
         timestamp: new Date().toISOString(),
       });
-
+      console.log("OpenAI raw response:", aiResponse);
       // If AI response includes property search, fetch matching properties
       let properties: Property[] = [];
       if (aiResponse.shouldSearchProperties) {
-        if (aiResponse.searchLocation) {
-          properties = await storage.getPropertiesByLocation(aiResponse.searchLocation);
-        } else if (aiResponse.searchQuery) {
+        if (aiResponse.searchQuery) {
           properties = await storage.searchProperties(aiResponse.searchQuery, userLocation);
+        } else if (aiResponse.searchLocation) {
+          properties = await storage.getPropertiesByLocation(aiResponse.searchLocation);
         }
 
         // Record search query for analytics

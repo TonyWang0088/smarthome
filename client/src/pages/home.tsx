@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import ChatSidebar from "@/components/chat-sidebar";
 import PropertyGrid from "@/components/property-grid";
 import PropertyModal from "@/components/property-modal";
@@ -10,8 +11,12 @@ import { useChat } from "@/hooks/use-chat";
 
 export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  //const [selectedProperty, setSelectedProperty] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+
   const [searchResults, setSearchResults] = useState<Property[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   
   // Get location info for search bar
   const { userLocation, isDetectingLocation } = useChat({
@@ -19,6 +24,31 @@ export default function Home() {
     onPropertiesFound: setSearchResults,
   });
 
+  // Tony
+  // Fetch initial properties
+  const { data: initialProperties, isLoading: isLoadingProperties } = useQuery({
+    queryKey: ["/api/properties"],
+    staleTime: 300000, // 5 minutes
+  });
+  
+
+  useEffect(() => {
+    if (initialProperties) {
+      setProperties(initialProperties);
+    }
+  }, [initialProperties]);
+
+  // handle properties changed
+  const handlePropertiesUpdate = (newProperties: Property[]) => {
+    console.log("Received new properties:", newProperties);
+    console.log("Previous properties state:", properties);
+    setProperties(newProperties);
+    console.log("Properties state after update:", newProperties);
+  };
+
+  useEffect(() => {
+    console.log("Properties state changed:", properties);
+  }, [properties]);
   return (
     <div className="min-h-screen bg-neutral">
       {/* Header */}
@@ -29,7 +59,7 @@ export default function Home() {
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <HomeIcon className="text-white text-lg" size={20} />
               </div>
-              <h1 className="text-xl font-bold text-secondary">HomeFinder AI</h1>
+              <h1 className="text-xl font-bold">Smart Home</h1>
             </div>
             <nav className="hidden md:flex items-center space-x-6">
               <a href="#" className="text-gray-600 hover:text-primary transition-colors">Buy</a>
@@ -52,7 +82,7 @@ export default function Home() {
       </header>
 
       {/* Search Bar Section */}
-      <div className="bg-gray-50 py-8">
+      {/* <div className="bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SearchBar 
             onSearchResults={setSearchResults}
@@ -60,20 +90,24 @@ export default function Home() {
             isDetectingLocation={isDetectingLocation}
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="flex h-[calc(100vh-12rem)]">
         {/* Chat Sidebar */}
         <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:block w-full md:w-96 bg-white border-r border-gray-200`}>
           <ChatSidebar 
             onPropertiesFound={setSearchResults}
+            onPropertiesUpdate={handlePropertiesUpdate}
             onMobileMenuClose={() => setIsMobileMenuOpen(false)}
           />
         </div>
 
         {/* Property Grid */}
         <div className={`${isMobileMenuOpen ? 'hidden' : 'block'} md:block flex-1`}>
-          <PropertyGrid 
+          <PropertyGrid
+            //properties={properties}
+            properties={properties}
+            isLoading={isLoadingProperties}
             searchResults={searchResults}
             onPropertySelect={setSelectedProperty}
           />

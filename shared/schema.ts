@@ -98,6 +98,19 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
+// Tony
+export const chatRequestSchema = z.object({
+  message: z.string().min(1),
+  sessionId: z.string(),
+  userLocation: z.object({
+    lat: z.number(),
+    lng: z.number(),
+    address: z.string().optional(),
+  }).optional(),
+  imageData: z.string().optional(), // base64 encoded image
+  isVoiceInput: z.boolean().optional(),
+});
+
 // Types
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;

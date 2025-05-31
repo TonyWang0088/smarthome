@@ -7,16 +7,19 @@ import { MapPin, Star, Heart, Map } from "lucide-react";
 import { Property } from "@shared/schema";
 
 interface PropertyGridProps {
+  properties: Property[];
+  isLoading?: boolean;
   searchResults: Property[];
   onPropertySelect: (property: Property) => void;
 }
 
-export default function PropertyGrid({ searchResults, onPropertySelect }: PropertyGridProps) {
-  const { data: allProperties = [], isLoading } = useQuery<Property[]>({
-    queryKey: ["/api/properties"],
-  });
+export default function PropertyGrid({ properties, isLoading, searchResults, onPropertySelect }: PropertyGridProps) {
+  // Tony
+  // const { data: allProperties = [], isLoading } = useQuery<Property[]>({
+  //   queryKey: ["/api/properties"],
+  // });
 
-  const properties = searchResults.length > 0 ? searchResults : allProperties;
+  //const properties = searchResults.length > 0 ? searchResults : allProperties;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -70,7 +73,7 @@ export default function PropertyGrid({ searchResults, onPropertySelect }: Proper
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2">
-              <h3 className="text-lg font-semibold text-secondary">
+              <h3 className="text-lg font-semibold">
                 {searchResults.length > 0 ? "Search Results" : "Properties in Vancouver"}
               </h3>
               <Badge className="bg-primary text-white">
@@ -137,7 +140,7 @@ export default function PropertyGrid({ searchResults, onPropertySelect }: Proper
                   
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-xl text-secondary">
+                      <h4 className="font-bold text-xl">
                         {formatPrice(property.price)}
                       </h4>
                       <span className="text-sm text-gray-500">
