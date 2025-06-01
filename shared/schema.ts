@@ -7,24 +7,24 @@ export const properties = sqliteTable("properties", {
   address: text("address").notNull(),
   city: text("city").notNull(),
   province: text("province").notNull(),
-  postalCode: text("postal_code").notNull(),
+  postalCode: text("postal_code"),
   price: integer("price").notNull(),
-  bedrooms: integer("bedrooms").notNull(),
-  bathrooms: real("bathrooms").notNull(),
-  squareFeet: integer("square_feet").notNull(),
-  neighborhood: text("neighborhood").notNull(),
-  description: text("description").notNull(),
-  features: text("features").notNull(), // JSON string for array
-  images: text("images").notNull(), // JSON string for array
-  latitude: real("latitude").notNull(),
-  longitude: real("longitude").notNull(),
-  rating: real("rating").notNull(),
-  daysOnMarket: integer("days_on_market").notNull(),
-  status: text("status").notNull(), // "new", "price_drop", "open_house", etc.
+  bedroom: integer("bedroom"),
+  bathrooms: real("bathrooms"),
+  squareFeet: integer("square_feet"),
+  neighborhood: text("neighborhood"),
+  description: text("description"),
+  features: text("features"), // JSON string for array
+  images: text("images"), // JSON string for array
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  rating: real("rating"),
+  daysOnMarket: integer("days_on_market"),
+  status: text("status"), // "new", "price_drop", "open_house", etc.
   yearBuilt: integer("year_built"),
-  propertyType: text("property_type").notNull(), // "house", "condo", "townhouse"
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
+  propertyType: text("property_type"), // "house", "condo", "townhouse"
+  createdAt: text("created_at"),
+  updatedAt: text("updated_at"),
 });
 
 export const chatMessages = sqliteTable("chat_messages", {
@@ -69,6 +69,74 @@ export const users = sqliteTable("users", {
   password: text("password").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const houseproperties = sqliteTable("houseproperties", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  listingId: text("listing_id").notNull().unique(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  province: text("province").notNull(),
+  postalCode: text("postal_code"),
+  price: integer("price").notNull(),
+  originalPrice: integer("original_price"),
+  priceChangeDate: text("price_change_date"),
+  bedroom: integer("bedroom"),
+  bathrooms: real("bathrooms"),
+  squareFeet: integer("square_feet"),
+  lotSize: integer("lot_size"),
+  propertyType: text("property_type"),
+  buildingType: text("building_type"),
+  ownershipType: text("ownership_type"),
+  age: integer("age"),
+  description: text("description"),
+  features: text("features"), // JSON array
+  amenities: text("amenities"), // JSON array
+  images: text("images"), // JSON array
+  virtualTours: text("virtual_tours"), // JSON array
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  neighborhood: text("neighborhood"),
+  schoolDistrict: text("school_district"),
+  zoning: text("zoning"),
+  taxes: integer("taxes"),
+  strataFee: integer("strata_fee"),
+  maintenanceFee: integer("maintenance_fee"),
+  yearBuilt: integer("year_built"),
+  style: text("style"),
+  stories: integer("stories"),
+  title: text("title"),
+  parkingType: text("parking_type"),
+  parkingSpaces: integer("parking_spaces"),
+  heatingType: text("heating_type"),
+  coolingType: text("cooling_type"),
+  fireplace: integer("fireplace", { mode: "boolean" }),
+  basement: text("basement"),
+  exterior: text("exterior"),
+  roof: text("roof"),
+  view: text("view"),
+  water: text("water"),
+  sewer: text("sewer"),
+  status: text("status"),
+  daysOnMarket: integer("days_on_market"),
+  lastUpdated: text("last_updated"),
+  mlsNumber: text("mls_number"),
+  listingDate: text("listing_date"),
+  openHouse: text("open_house"), // JSON array
+  agentName: text("agent_name"),
+  agentPhone: text("agent_phone"),
+  agentCompany: text("agent_company"),
+  createdAt: text("created_at"),
+  updatedAt: text("updated_at"),
+});
+
+export const insertHousePropertySchema = createInsertSchema(houseproperties).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type HouseProperty = typeof houseproperties.$inferSelect;
+export type InsertHouseProperty = z.infer<typeof insertHousePropertySchema>;
 
 // Insert schemas
 export const insertPropertySchema = createInsertSchema(properties).omit({

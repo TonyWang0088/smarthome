@@ -8,6 +8,7 @@ import {
   propertyViews, 
   searchQueries, 
   users,
+  houseproperties,
   type Property,
   type InsertProperty,
   type ChatMessage,
@@ -17,12 +18,14 @@ import {
   type PropertyView,
   type InsertPropertyView,
   type SearchQuery,
-  type InsertSearchQuery
+  type InsertSearchQuery,
+  type HouseProperty,
+  type InsertHouseProperty
 } from "@shared/schema";
 import { eq, like, and, or, desc } from "drizzle-orm";
 
 // Initialize SQLite database
-const sqlite = new Database("database1.sqlite");
+const sqlite = new Database("database7.sqlite");
 sqlite.pragma("journal_mode = WAL");
 
 export const db = drizzle(sqlite);
@@ -31,29 +34,91 @@ export const db = drizzle(sqlite);
 export function initializeDatabase() {
   // Create tables
   db.run(`
+    CREATE TABLE IF NOT EXISTS houseproperties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      listing_id TEXT NOT NULL UNIQUE,
+      address TEXT NOT NULL,
+      city TEXT NOT NULL,
+      province TEXT NOT NULL,
+      postal_code TEXT,
+      price INTEGER NOT NULL,
+      original_price INTEGER,
+      price_change_date TEXT,
+      bedroom INTEGER,
+      bathrooms REAL,
+      square_feet INTEGER,
+      lot_size INTEGER,
+      property_type TEXT,
+      building_type TEXT,
+      ownership_type TEXT,
+      age INTEGER,
+      description TEXT,
+      features TEXT,
+      amenities TEXT,
+      images TEXT,
+      virtual_tours TEXT,
+      latitude REAL,
+      longitude REAL,
+      neighborhood TEXT,
+      school_district TEXT,
+      zoning TEXT,
+      taxes INTEGER,
+      strata_fee INTEGER,
+      maintenance_fee INTEGER,
+      year_built INTEGER,
+      style TEXT,
+      stories INTEGER,
+      title TEXT,
+      parking_type TEXT,
+      parking_spaces INTEGER,
+      heating_type TEXT,
+      cooling_type TEXT,
+      fireplace INTEGER,
+      basement TEXT,
+      exterior TEXT,
+      roof TEXT,
+      view TEXT,
+      water TEXT,
+      sewer TEXT,
+      status TEXT,
+      days_on_market INTEGER,
+      rating REAL DEFAULT 5.0,
+      last_updated TEXT,
+      mls_number TEXT,
+      listing_date TEXT,
+      open_house TEXT,
+      agent_name TEXT,
+      agent_phone TEXT,
+      agent_company TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS properties (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       address TEXT NOT NULL,
       city TEXT NOT NULL,
       province TEXT NOT NULL,
-      postal_code TEXT NOT NULL,
+      postal_code TEXT,
       price INTEGER NOT NULL,
-      bedrooms INTEGER NOT NULL,
-      bathrooms REAL NOT NULL,
-      square_feet INTEGER NOT NULL,
-      neighborhood TEXT NOT NULL,
-      description TEXT NOT NULL,
-      features TEXT NOT NULL,
-      images TEXT NOT NULL,
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      rating REAL NOT NULL,
-      days_on_market INTEGER NOT NULL,
-      status TEXT NOT NULL,
+      bedroom INTEGER,
+      bathrooms REAL,
+      square_feet INTEGER,
+      neighborhood TEXT,
+      description TEXT,
+      features TEXT,
+      images TEXT,
+      latitude REAL,
+      longitude REAL,
+      rating REAL,
+      days_on_market INTEGER,
+      status TEXT,
       year_built INTEGER,
-      property_type TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      property_type TEXT,
+      created_at TEXT,
+      updated_at TEXT
     )
   `);
 
@@ -128,7 +193,7 @@ function insertMockData() {
       province: "BC",
       postalCode: "V6H 4A1",
       price: 1250000,
-      bedrooms: 4,
+      bedroom: 4,
       bathrooms: 3,
       squareFeet: 2850,
       neighborhood: "Kitsilano",
@@ -153,7 +218,7 @@ function insertMockData() {
       province: "BC",
       postalCode: "V5L 2X9",
       price: 895000,
-      bedrooms: 3,
+      bedroom: 3,
       bathrooms: 2,
       squareFeet: 2200,
       neighborhood: "Mount Pleasant",
@@ -177,7 +242,7 @@ function insertMockData() {
       province: "BC",
       postalCode: "V5Z 1R8",
       price: 1680000,
-      bedrooms: 5,
+      bedroom: 5,
       bathrooms: 4,
       squareFeet: 3400,
       neighborhood: "Fairview",
@@ -201,7 +266,7 @@ function insertMockData() {
       province: "BC",
       postalCode: "V6S 2A4",
       price: 1125000,
-      bedrooms: 4,
+      bedroom: 4,
       bathrooms: 3,
       squareFeet: 2650,
       neighborhood: "Dunbar-Southlands",
@@ -224,7 +289,7 @@ function insertMockData() {
       province: "BC",
       postalCode: "V5L 3X1",
       price: 749000,
-      bedrooms: 2,
+      bedroom: 2,
       bathrooms: 2,
       squareFeet: 1850,
       neighborhood: "Grandview-Woodland",
@@ -247,7 +312,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V6S 2A4",
     "price": 1250000,
-    "bedrooms": 2,
+    "bedroom": 2,
     "bathrooms": 2.0,
     "squareFeet": 950,
     "neighborhood": "Downtown Vancouver",
@@ -268,7 +333,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V5Z 2L5",
     "price": 1680000,
-    "bedrooms": 3,
+    "bedroom": 3,
     "bathrooms": 2.5,
     "squareFeet": 1200,
     "neighborhood": "Cambie Village",
@@ -289,7 +354,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V6P 1A2",
     "price": 2850000,
-    "bedrooms": 4,
+    "bedroom": 4,
     "bathrooms": 3.0,
     "squareFeet": 2100,
     "neighborhood": "Point Grey",
@@ -310,7 +375,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V6E 4Z5",
     "price": 1950000,
-    "bedrooms": 2,
+    "bedroom": 2,
     "bathrooms": 2.0,
     "squareFeet": 1050,
     "neighborhood": "Coal Harbour",
@@ -331,7 +396,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V6R 1A8",
     "price": 2200000,
-    "bedrooms": 3,
+    "bedroom": 3,
     "bathrooms": 2.0,
     "squareFeet": 1650,
     "neighborhood": "Kitsilano",
@@ -352,7 +417,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V6B 2Z6",
     "price": 1150000,
-    "bedrooms": 1,
+    "bedroom": 1,
     "bathrooms": 1.0,
     "squareFeet": 650,
     "neighborhood": "Yaletown",
@@ -373,7 +438,7 @@ function insertMockData() {
     "province": "BC",
     "postalCode": "V6M 1A4",
     "price": 3200000,
-    "bedrooms": 5,
+    "bedroom": 5,
     "bathrooms": 4.0,
     "squareFeet": 2800,
     "neighborhood": "Kerrisdale",
@@ -547,6 +612,100 @@ export class DatabaseStorage {
       ...query,
       searchedAt: new Date().toISOString()
     }).returning().get();
+  }
+
+  // House Property methods
+  async getAllHouseProperties(): Promise<HouseProperty[]> {
+    const results = db.select().from(houseproperties).all();
+    return results.map(property => ({
+      ...property,
+      features: JSON.parse(property.features),
+      amenities: JSON.parse(property.amenities),
+      images: JSON.parse(property.images),
+      virtualTours: property.virtualTours ? JSON.parse(property.virtualTours) : [],
+      openHouse: property.openHouse ? JSON.parse(property.openHouse) : []
+    }));
+  }
+
+  async getHouseProperty(id: number): Promise<HouseProperty | undefined> {
+    const result = db.select().from(houseproperties).where(eq(houseproperties.id, id)).get();
+    if (!result) return undefined;
+    
+    return {
+      ...result,
+      features: JSON.parse(result.features),
+      amenities: JSON.parse(result.amenities),
+      images: JSON.parse(result.images),
+      virtualTours: result.virtualTours ? JSON.parse(result.virtualTours) : [],
+      openHouse: result.openHouse ? JSON.parse(result.openHouse) : []
+    };
+  }
+
+  async getHousePropertyByListingId(listingId: string): Promise<HouseProperty | undefined> {
+    const result = db.select().from(houseproperties).where(eq(houseproperties.listingId, listingId)).get();
+    if (!result) return undefined;
+    
+    return {
+      ...result,
+      features: JSON.parse(result.features),
+      amenities: JSON.parse(result.amenities),
+      images: JSON.parse(result.images),
+      virtualTours: result.virtualTours ? JSON.parse(result.virtualTours) : [],
+      openHouse: result.openHouse ? JSON.parse(result.openHouse) : []
+    };
+  }
+
+  async createHouseProperty(property: InsertHouseProperty): Promise<HouseProperty> {
+    const now = new Date().toISOString();
+    const result = db.insert(houseproperties).values({
+      ...property,
+      features: JSON.stringify(property.features),
+      amenities: JSON.stringify(property.amenities),
+      images: JSON.stringify(property.images),
+      virtualTours: property.virtualTours ? JSON.stringify(property.virtualTours) : null,
+      openHouse: property.openHouse ? JSON.stringify(property.openHouse) : null,
+      createdAt: now,
+      updatedAt: now
+    }).returning().get();
+
+    return {
+      ...result,
+      features: JSON.parse(result.features),
+      amenities: JSON.parse(result.amenities),
+      images: JSON.parse(result.images),
+      virtualTours: result.virtualTours ? JSON.parse(result.virtualTours) : [],
+      openHouse: result.openHouse ? JSON.parse(result.openHouse) : []
+    };
+  }
+
+  async updateHouseProperty(id: number, property: Partial<InsertHouseProperty>): Promise<HouseProperty> {
+    const now = new Date().toISOString();
+    const result = db.update(houseproperties)
+      .set({
+        ...property,
+        features: property.features ? JSON.stringify(property.features) : undefined,
+        amenities: property.amenities ? JSON.stringify(property.amenities) : undefined,
+        images: property.images ? JSON.stringify(property.images) : undefined,
+        virtualTours: property.virtualTours ? JSON.stringify(property.virtualTours) : undefined,
+        openHouse: property.openHouse ? JSON.stringify(property.openHouse) : undefined,
+        updatedAt: now
+      })
+      .where(eq(houseproperties.id, id))
+      .returning()
+      .get();
+
+    return {
+      ...result,
+      features: JSON.parse(result.features),
+      amenities: JSON.parse(result.amenities),
+      images: JSON.parse(result.images),
+      virtualTours: result.virtualTours ? JSON.parse(result.virtualTours) : [],
+      openHouse: result.openHouse ? JSON.parse(result.openHouse) : []
+    };
+  }
+
+  async deleteHouseProperty(id: number): Promise<void> {
+    db.delete(houseproperties).where(eq(houseproperties.id, id)).run();
   }
 }
 

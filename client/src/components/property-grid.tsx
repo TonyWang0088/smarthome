@@ -149,7 +149,7 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
                     </div>
                     
                     <p className="text-gray-600 text-sm mb-3">
-                      {property.bedrooms} bd | {property.bathrooms} ba | {property.squareFeet.toLocaleString()} sqft
+                      {property.bedroom} bd | {property.bathrooms} ba | {property.squareFeet.toLocaleString()} sqft
                     </p>
                     
                     <p className="text-gray-800 text-sm mb-3 truncate">

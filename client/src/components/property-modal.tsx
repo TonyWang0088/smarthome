@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Calendar, MapPin, Star, Car, Flame, TreePine, Dumbbell } from "lucide-react";
 import { Property } from "@shared/schema";
+import useEmblaCarousel from 'embla-carousel-react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface PropertyModalProps {
   property: Property;
@@ -10,6 +12,26 @@ interface PropertyModalProps {
 }
 
 export default function PropertyModal({ property, onClose }: PropertyModalProps) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const scrollTo = useCallback((index: number) => {
+    if (emblaApi) emblaApi.scrollTo(index);
+  }, [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-CA', {
       style: 'currency',
@@ -48,21 +70,37 @@ export default function PropertyModal({ property, onClose }: PropertyModalProps)
         <div className="grid md:grid-cols-2 gap-6">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <img
-              src={property.images[0]}
-              alt={`Property at ${property.address}`}
-              className="w-full h-64 object-cover rounded-lg"
-            />
-            {property.images.length > 1 && (
-              <div className="grid grid-cols-3 gap-2">
-                {property.images.slice(1).map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`Property view ${index + 2}`}
-                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  />
+            <div className="embla overflow-hidden rounded-lg" ref={emblaRef}>
+              <div className="embla__container">
+                {property.images.map((image, index) => (
+                  <div key={index} className="embla__slide flex-[0_0_100%] min-w-0">
+                    <img
+                      src={image}
+                      alt={`Property view ${index + 1}`}
+                      className="w-full h-64 object-cover"
+                    />
+                  </div>
                 ))}
+              </div>
+            </div>
+            {property.images.length > 1 && (
+              <div className="embla-thumbs">
+                <div className="embla-thumbs__container">
+                  {property.images.map((image, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`embla-thumbs__slide ${index === selectedIndex ? 'opacity-100' : 'opacity-50'}`}
+                      onClick={() => scrollTo(index)}
+                    >
+                      <img
+                        src={image}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -74,7 +112,7 @@ export default function PropertyModal({ property, onClose }: PropertyModalProps)
                 {formatPrice(property.price)}
               </h4>
               <p className="text-gray-600 mb-2">
-                {property.bedrooms} bd | {property.bathrooms} ba | {property.squareFeet.toLocaleString()} sqft
+                {property.bedroom} bd | {property.bathrooms} ba | {property.squareFeet.toLocaleString()} sqft
               </p>
               <p className="text-gray-800">
                 {property.address}, {property.city}, {property.province} {property.postalCode}
