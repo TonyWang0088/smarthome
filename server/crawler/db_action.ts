@@ -145,57 +145,79 @@ export async function importToDatabase(property: InsertHouseProperty) {
     .where(sql`listing_id = ${property.listingId}`)
     .get();
 
-  console.log('准备插入的数据:', JSON.stringify(property, null, 2));
+  console.log('准备插入的数据Data prepared:', JSON.stringify(property, null, 2));
   try {
-    const result = await db.insert(houseproperties)
-      .values(property)
-      .run();
+    const result = "";
+    if (existing) {
+      // 更新现有记录
+      const result = await db.update(houseproperties)
+        .set(property)
+        .where(sql`listing_id = ${property.listingId}`)
+        .run();
+    } else {
+      // 插入新记录
+      const result = await db.insert(houseproperties)
+        .values(property)
+        .run();
+    }    
     console.log('插入结果:', result);
     return result;
   } catch (e) {
     console.error('插入失败:', e);
     throw e;
   }
-  // if (existing) {
-  //   // 更新现有记录
-  //   await db.update(houseproperties)
-  //     .set(property)
-  //     .where(sql`listing_id = ${property.listingId}`)
-  //     .run();
-  // } else {
-  //   // 插入新记录
-  //   await db.insert(houseproperties)
-  //     .values(property)
-  //     .run();
-  // }
 }
 
 // 转换HouseSigma数据到数据库格式
 export function transformHouseSigmaData(data: any): InsertHouseProperty {
   const now = new Date().toISOString();
   
-  // 从API响应中提取关键数据
-  const houseData = data.house || data;
-  const assessmentData = data.assessment?.properties || {};
-  const pictureData = data.picture || {};
-  const keyFacts = data.key_facts_v2 || {};
-  const propertyDetail = data.property_detail || {};
-  const analytics = data.analytics || {};
+  try {
+    console.log('[DEBUG] 开始转换房产数据');
+    
+    // 从API响应中提取关键数据
+    const houseData = data.house || data;
+    console.log('[DEBUG] houseData:', JSON.stringify({
+      id_listing: houseData.id_listing,
+      address: houseData.address,
+      city: houseData.city
+    }, null, 2));
 
-  return {
+    const assessmentData = data.assessment?.properties || {};
+    const pictureData = data.picture || {};
+    const keyFacts = data.key_facts_v2 || {};
+    const propertyDetail = data.property_detail || {};
+    const analytics = data.analytics || {};
+    
+    // console.log('[DEBUG] propertyDetail.building:', propertyDetail.building);
+    // const building_kv = new Map(propertyDetail.building.value?.map((item: { name: any; value: any; }) => [item.name, item.value]) || []);
+
+    // 验证必要字段
+    if (!houseData.id_listing) {
+      console.error('[ERROR] 缺少必要字段: id_listing');
+      console.error('[DEBUG] houseData:', JSON.stringify(houseData, null, 2));
+      throw new Error('缺少房产ID(id_listing)');
+    }
+
+    if (!houseData.address) {
+      console.warn('[WARN] 缺少地址信息(address)');
+    }
+
+    const result = {
     listingId: houseData.id_listing,
     idAddress: houseData.id_address,
     seoMunicipality: houseData.seo_municipality,
     seoAddress: houseData.seo_address,
+    squareFeet: houseData.house_area?.estimate || 0,
     mlNum: houseData.ml_num,
     hashId: houseData.hash_id,
     houseTypeName: houseData.house_type_name,
-    houseType: houseData.house_type,
+    houseType: houseData.house_type_name,
     address: houseData.address,
     addressSeo: houseData.address_seo,
     addressNavigation: houseData.address_navigation,
-    listStatus: JSON.stringify(houseData.list_status),
-    listDates: JSON.stringify(houseData.list_dates),
+    listStatus: houseData.list_status,
+    listDates: houseData.list_dates,
     idCommunity: houseData.id_community,
     idMunicipality: houseData.id_municipality,
     communityName: houseData.community_name,
@@ -209,26 +231,26 @@ export function transformHouseSigmaData(data: any): InsertHouseProperty {
     bedroomPlus: houseData.bedroom_plus,
     bedroomString: houseData.bedroom_string,
     washroom: houseData.washroom,
-    parkingInfo: JSON.stringify(houseData.parking),
+    parkingInfo: houseData.parking,
     price: houseData.price_int,
     priceAbbr: houseData.price_abbr,
     priceSold: houseData.price_sold,
     priceSoldInt: houseData.price_sold_int,
     priceTag: houseData.price_tag,
-    mapInfo: JSON.stringify(houseData.map),
+    mapInfo: JSON.stringify(houseData.map || {}),
     taxInt: houseData.tax_int,
     maintenanceInt: houseData.maintenance_int,
     brokerage: houseData.brokerage,
-    textInfo: JSON.stringify(houseData.text),
-    houseArea: JSON.stringify(houseData.house_area),
-    landInfo: JSON.stringify(houseData.land),
+    textInfo: houseData.text,
+    houseArea: houseData.house_area,
+    landInfo: houseData.land ,
     postalCode: houseData.postal_code,
     postalCodeSeo: houseData.postal_code_seo,
     tosSource: houseData.tos_source,
     dataSourceRaw: houseData.data_source_raw,
     dataSourceText: houseData.data_source_text,
-    copyrightText: JSON.stringify(houseData.copyright_text),
-    agentUser: JSON.stringify(houseData.agent_user),
+    copyrightText: houseData.copyright_text,
+    agentUser: houseData.agent_user,
     bindAgentUser: houseData.bind_agent_user,
     contactMessage: houseData.contact_message,
     pendingReviewText: houseData.pending_review_text,
@@ -236,16 +258,15 @@ export function transformHouseSigmaData(data: any): InsertHouseProperty {
     brokerageText: houseData.brokerage_text,
     scheduleMessage: houseData.schedule_message,
     directContactMessage: houseData.direct_contact_message,
-    keyFacts: JSON.stringify(keyFacts),
-    propertyDetail: JSON.stringify(propertyDetail),
-    listingHistory: JSON.stringify(data.listing_history),
-    roomsInfo: JSON.stringify(data.rooms),
-    communityStats: JSON.stringify(data.community_stats),
-    analyticsInfo: JSON.stringify(analytics),
-    // 原有字段
+    keyFacts: JSON.stringify(keyFacts || {}),
+    propertyDetail: JSON.stringify(propertyDetail || {}),
+    listingHistory: JSON.stringify(data.listing_history || {}),
+    roomsInfo: JSON.stringify(data.rooms || {}),
+    communityStats: JSON.stringify(data.community_stats || {}),
+    analyticsInfo: JSON.stringify(analytics || {}),
     city: assessmentData.city || houseData.city || houseData.municipality_name || 'Unknown',
-    description: houseData.description || '',
-    features: JSON.stringify(houseData.features || []),
+    description: keyFacts.description1.value || '',
+    features: JSON.stringify(keyFacts.summary.value || []),
     amenities: JSON.stringify(houseData.amenities || []),
     images: JSON.stringify(pictureData.photo_list || []),
     virtualTours: JSON.stringify(houseData.virtual_tours || []),
@@ -265,4 +286,17 @@ export function transformHouseSigmaData(data: any): InsertHouseProperty {
     createdAt: now,
     updatedAt: now
   };
+
+  console.log('[DEBUG] 转换完成:', JSON.stringify({
+    listingId: result.listingId,
+    address: result.address,
+    price: result.price
+  }, null, 2));
+  
+  return result;
+  } catch (error) {
+    console.error(error); // 打印完整错误对象，包括堆栈
+    //console.error('[DEBUG] 原始数据:', JSON.stringify(data, null, 2));
+    throw new Error(`[ERROR] 房产数据转换失败: ${error}\n${error instanceof Error ? error.stack : ''}`);
+  }
 }

@@ -181,7 +181,7 @@ export function initializeDatabase() {
 
 function insertMockData() {
   // Check if properties already exist
-  const existingProperties = db.select().from(properties).all();
+  const existingProperties = db.select().from(houseproperties).all();
   if (existingProperties.length > 0) {
     return; // Data already exists
   }
@@ -470,7 +470,7 @@ function insertMockData() {
 export class DatabaseStorage {
   // Property methods
   async getAllProperties(): Promise<Property[]> {
-    const results = db.select().from(properties).all();
+    const results = db.select().from(houseproperties).all();
     return results.map(property => ({
       ...property,
       features: JSON.parse(property.features),
@@ -479,7 +479,7 @@ export class DatabaseStorage {
   }
 
   async getProperty(id: number): Promise<Property | undefined> {
-    const result = db.select().from(properties).where(eq(properties.id, id)).get();
+    const result = db.select().from(houseproperties).where(eq(properties.id, id)).get();
     if (!result) return undefined;
     
     return {
@@ -496,7 +496,7 @@ export class DatabaseStorage {
     let results;
     if (location) {
       const locationTerm = `%${location.toLowerCase()}%`;
-      results = db.select().from(properties).where(
+      results = db.select().from(houseproperties).where(
         and(
           or(
             like(properties.description, searchTerm),
@@ -513,7 +513,7 @@ export class DatabaseStorage {
         )
       ).all();
     } else {
-      results = db.select().from(properties).where(
+      results = db.select().from(houseproperties).where(
         or(
           like(properties.description, searchTerm),
           like(properties.features, searchTerm),
@@ -533,7 +533,7 @@ export class DatabaseStorage {
   }
 
   async getPropertiesByLocation(city: string): Promise<Property[]> {
-    const results = db.select().from(properties)
+    const results = db.select().from(houseproperties)
       .where(like(properties.city, `%${city}%`))
       .all();
     return results.map(property => ({
