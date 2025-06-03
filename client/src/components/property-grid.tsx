@@ -66,6 +66,18 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
     );
   }
 
+  // Determine which properties to display
+  console.log('Received props - properties:', properties.length, 'searchResults:', searchResults.length);
+  
+  // Check if a search has been performed (searchResults is not empty array)
+  const hasSearched = searchResults.length > 0 || 
+                     (searchResults.length === 0 && properties.length > 0);
+  
+  const displayProperties = hasSearched ? searchResults : properties;
+  const displayCount = displayProperties.length;
+  console.log('Displaying:', displayCount, 'properties', 
+             hasSearched ? '(search results)' : '(all properties)');
+
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Search Bar & Filters */}
@@ -74,10 +86,10 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2">
               <h3 className="text-lg font-semibold">
-                {searchResults.length > 0 ? "Search Results" : "Properties in Vancouver"}
+                {hasSearched ? "Search Results" : "Properties in Vancouver"}
               </h3>
               <Badge className="bg-primary text-white">
-                {properties.length} Results
+                {displayCount} Results
               </Badge>
             </div>
             <div className="flex items-center space-x-3">
@@ -104,13 +116,17 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
       {/* Property Listings */}
       <div className="p-4">
         <div className="max-w-6xl mx-auto">
-          {properties.length === 0 ? (
+          {displayCount === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No properties found. Try adjusting your search criteria.</p>
+              <p className="text-gray-500">
+                {!hasSearched ? 
+                  "No properties available" : 
+                  "No properties match your search criteria"}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.map((property) => (
+              {displayProperties.map((property) => (
                 <Card
                   key={property.id}
                   className="overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"

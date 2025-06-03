@@ -22,7 +22,7 @@ import {
   type HouseProperty,
   type InsertHouseProperty
 } from "@shared/schema";
-import { eq, like, and, or, desc } from "drizzle-orm";
+import { eq, like, and, or, desc, gte, lte } from "drizzle-orm";
 
 // Initialize SQLite database
 const sqlite = new Database("database7.sqlite");
@@ -182,12 +182,14 @@ export function initializeDatabase() {
 function insertMockData() {
   // Check if properties already exist
   const existingProperties = db.select().from(houseproperties).all();
+  //console.log(existingProperties)
   if (existingProperties.length > 0) {
     return; // Data already exists
   }
 
-  const mockProperties: InsertProperty[] = [
+ const mockProperties: InsertHouseProperty[] = [
     {
+      listingId: "id001",
       address: "2847 Oak Street",
       city: "Vancouver",
       province: "BC",
@@ -213,6 +215,7 @@ function insertMockData() {
       propertyType: "house"
     },
     {
+      listingId: "id002",
       address: "1456 Fraser Street",
       city: "Vancouver",
       province: "BC",
@@ -237,6 +240,7 @@ function insertMockData() {
       propertyType: "house"
     },
     {
+      listingId: "id003",
       address: "789 West 15th Avenue",
       city: "Vancouver",
       province: "BC",
@@ -261,6 +265,7 @@ function insertMockData() {
       propertyType: "townhouse"
     },
     {
+      listingId: "id004",
       address: "3201 Dunbar Street",
       city: "Vancouver",
       province: "BC",
@@ -284,6 +289,7 @@ function insertMockData() {
       propertyType: "house"
     },
     {
+      listingId: "id005",
       address: "1067 Commercial Drive",
       city: "Vancouver",
       province: "BC",
@@ -307,6 +313,7 @@ function insertMockData() {
       propertyType: "condo"
     },
   {
+    listingId: "id006",
     "address": "109 W Hastings St #2304",
     "city": "Vancouver",
     "province": "BC",
@@ -328,6 +335,7 @@ function insertMockData() {
     "propertyType": "Condo",
   },
   {
+    listingId: "id007",
     "address": "2847 Cambie St #15",
     "city": "Vancouver",
     "province": "BC",
@@ -349,6 +357,7 @@ function insertMockData() {
     "propertyType": "Townhouse",
   },
   {
+    listingId: "id008",
     "address": "4562 W 8th Ave",
     "city": "Vancouver",
     "province": "BC",
@@ -370,6 +379,7 @@ function insertMockData() {
     "propertyType": "House",
   },
   {
+    listingId: "id009",
     "address": "1288 W Georgia St #3901",
     "city": "Vancouver",
     "province": "BC",
@@ -391,6 +401,7 @@ function insertMockData() {
     "propertyType": "Condo",
   },
   {
+    listingId: "id010",
     "address": "3347 W 12th Ave",
     "city": "Vancouver",
     "province": "BC",
@@ -412,6 +423,7 @@ function insertMockData() {
     "propertyType": "House",
   },
   {
+    listingId: "id011",
     "address": "1055 Homer St #1203",
     "city": "Vancouver",
     "province": "BC",
@@ -433,6 +445,7 @@ function insertMockData() {
     "propertyType": "Condo",
   },
   {
+    listingId: "id012",
     "address": "2150 W 43rd Ave",
     "city": "Vancouver",
     "province": "BC",
@@ -455,10 +468,12 @@ function insertMockData() {
   }
   ];
 
+
   // Insert mock properties
   const now = new Date().toISOString();
   for (const property of mockProperties) {
-    db.insert(properties).values({
+    //db.insert(properties).values({
+    db.insert(houseproperties).values({
       ...property,
       createdAt: now,
       updatedAt: now
@@ -490,7 +505,7 @@ export class DatabaseStorage {
   }
 
   async searchProperties(query: string, location?: string): Promise<Property[]> {
-    console.log("DEBUG QUERY:", query) 
+    console.log("DEBUG AI SEARCH BY:", query + " " + location);
     const searchTerm = `%${query.toLowerCase()}%`;
     
     let results;
@@ -532,9 +547,53 @@ export class DatabaseStorage {
     }));
   }
 
+  async searchPropertiesByPreciseLoc(lat: number, lng: number, radiusMeters: number): Promise<Property[]> {
+    // Earth radius in meters
+    const earthRadius = 6371000;
+    const radiusKm = radiusMeters / 1000;
+    
+    // Calculate bounding coordinates
+    const maxLat = lat + (radiusKm / 111.32);
+    const minLat = lat - (radiusKm / 111.32);
+    const maxLng = lng + (radiusKm / (111.32 * Math.cos(lat * Math.PI / 180)));
+    const minLng = lng - (radiusKm / (111.32 * Math.cos(lat * Math.PI / 180)));
+    
+    // First filter by bounding box for performance
+    const results = db.select().from(houseproperties).where(
+      and(
+        gte(houseproperties.latitude, minLat),
+        lte(houseproperties.latitude, maxLat),
+        gte(houseproperties.longitude, minLng),
+        lte(houseproperties.longitude, maxLng)
+      )
+    ).all();
+
+    // Then apply precise Haversine formula filtering
+    const filteredResults = results.filter(property => {
+      if (property.latitude === null || property.longitude === null) {
+        return false;
+      }
+      const dLat = (property.latitude - lat) * Math.PI / 180;
+      const dLng = (property.longitude - lng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat * Math.PI / 180) * Math.cos(property.latitude * Math.PI / 180) * 
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = earthRadius * c;
+      return distance <= radiusMeters;
+    });
+
+    return filteredResults.map(property => ({
+      ...property,
+      features: JSON.parse(property.features),
+      images: JSON.parse(property.images)
+    }));
+  }
+
   async getPropertiesByLocation(city: string): Promise<Property[]> {
     const results = db.select().from(houseproperties)
-      .where(like(properties.city, `%${city}%`))
+      .where(like(houseproperties.city, `%${city}%`))
       .all();
     return results.map(property => ({
       ...property,

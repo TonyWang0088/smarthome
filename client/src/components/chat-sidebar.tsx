@@ -5,28 +5,28 @@ import { Badge } from "@/components/ui/badge";
 //import { Bot, User, Send } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { Bot, User, Send, Mic, MicOff, Camera, X } from "lucide-react";
+import { Bot, User, Send, Mic, MicOff, Camera, X, LocateFixed } from "lucide-react";
 import { useChat } from "@/hooks/use-chat";
+import { detectUserLocation, formatLocationString } from "@/lib/geolocation";
 import { Property } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { type LocationData } from "@/lib/geolocation";
 
 interface ChatSidebarProps {
-  userLocation?: {
-    lat: number;
-    lng: number;
-    address?: string;
-  };
+  userLocation?: LocationData;
   onPropertiesUpdate?: (properties: any[]) => void;
   onPropertiesFound: (properties: Property[]) => void;
   onMobileMenuClose?: () => void;
 }
 
-export default function ChatSidebar({ onPropertiesFound, onPropertiesUpdate, onMobileMenuClose }: ChatSidebarProps) {
+export default function ChatSidebar({userLocation, onPropertiesFound, onPropertiesUpdate, onMobileMenuClose }: ChatSidebarProps) {
   // Tony
   const [inputValue, setInputValue] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   //const messagesEndRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,9 +35,10 @@ export default function ChatSidebar({ onPropertiesFound, onPropertiesUpdate, onM
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { messages, sendMessage, isLoading, userLocation, isDetectingLocation } = useChat({
+  const { messages, sendMessage, isLoading, isDetectingLocation } = useChat({
     onPropertiesFound,
     onPropertiesUpdate,
+    userLocation,
     //sessionId: "default-session", // In a real app, this would be user-specific
   });
 
@@ -88,6 +89,57 @@ export default function ChatSidebar({ onPropertiesFound, onPropertiesUpdate, onM
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleLocate = async () => {
+    try {
+      setIsLocating(true);
+      const location = await detectUserLocation();
+      
+      console.log("[DEBUG4]", location);
+      if (location) {
+        //setCurrentLocation(formatLocationString(location));
+        setCurrentLocation(location.address);
+        toast({
+          title: "Location Updated",
+          description: `Detected your location as ${formatLocationString(location)}`,
+        });
+
+        // Call search-by-location API
+        const response = await fetch("/api/properties/search-by-location", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            lat: location.latitude,
+            lng: location.longitude,
+            radius: 100 // 100 meters radius
+          }),
+        });
+        
+        const properties = await response.json();
+        console.log('Search results:', properties); // 添加调试日志
+        if (onPropertiesFound) {
+          // 确保总是传递数组，即使API返回null/undefined
+          onPropertiesFound(Array.isArray(properties) ? properties : []);
+        }
+      } else {
+        toast({
+          title: "Location Error",
+          description: "Could not determine your location",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Location Error",
+        description: "Failed to detect location",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLocating(false);
     }
   };
   const formatTime = (date: Date | string) => {
@@ -223,15 +275,30 @@ export default function ChatSidebar({ onPropertiesFound, onPropertiesUpdate, onM
     <div className="flex flex-col h-full">
       {/* Chat Header */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-secondary flex items-center">
+        <h2 className="text-lg font-semibold flex items-center">
           <Bot className="text-primary mr-2" size={20} />
           AI Assistant
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="ml-2 text-xs h-6 px-2"
+            onClick={handleLocate}
+            disabled={isLocating}
+          >
+            <LocateFixed className="w-3 h-3 mr-1" />
+            Locate Me
+          </Button>
         </h2>
+        <p className="text-xs text-gray-500 mt-1">
+          {isLocating ? "Locating..." : currentLocation || ""}
+        </p>
         <p className="text-sm text-gray-600 mt-1">Ask me anything about properties!</p>
         {isDetectingLocation ? (
           <p className="text-xs text-blue-600 mt-1">🌍 Detecting your location...</p>
         ) : (
-          <p className="text-xs text-gray-500 mt-1">📍 Searching in: {userLocation}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            📍 Searching in: {currentLocation || "Unknown location"}
+          </p>
         )}
       </div>
 

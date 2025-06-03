@@ -8,35 +8,67 @@ import { Property } from "@shared/schema";
 import { Home as HomeIcon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/use-chat";
+import { useLocation } from "@/hooks/use-location";
 
 export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   //const [selectedProperty, setSelectedProperty] = useState<Property[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
-
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  // State to store search results that will be displayed in PropertyGrid
+  // This state is updated via the onPropertiesFound callback passed to ChatSidebar
   const [searchResults, setSearchResults] = useState<Property[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  
   // Get location info for search bar
   const { userLocation, isDetectingLocation } = useChat({
     sessionId: "home-session",
     onPropertiesFound: setSearchResults,
+    userLocation: location || undefined
   });
 
-  // Tony
-  // Fetch initial properties
-  const { data: initialProperties, isLoading: isLoadingProperties } = useQuery({
+  // Fetch all properties
+  const { data: propertiesData, isLoading: isLoadingProperties } = useQuery({
     queryKey: ["/api/properties"],
+    queryFn: async () => {
+      const response = await fetch("/api/properties");
+      return await response.json();
+    },
     staleTime: 300000, // 5 minutes
   });
-  
+
+//  // Fetch properties based on location with 100m radius using new API
+//   const { data: propertiesData, isLoading: isLoadingProperties } = useQuery({
+//     queryKey: ["/api/properties/search-by-location", location],
+//     queryFn: async () => {
+//       if (!location || !location.longitude || !location.latitude) {
+//         const response = await fetch("/api/properties");
+//         return await response.json();
+//       }
+      
+//       const response = await fetch("/api/properties/search-by-location", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           lat: location.latitude,
+//           lng: location.longitude,
+//           radius: 100 // 100 meters radius
+//         }),
+//       });
+//       return await response.json();
+//     },
+//     staleTime: 300000, // 5 minutes
+//   });
 
   useEffect(() => {
-    if (initialProperties) {
-      setProperties(initialProperties);
+    if (propertiesData) {
+      setProperties(propertiesData);
     }
-  }, [initialProperties]);
+  }, [propertiesData]);
 
   // handle properties changed
   const handlePropertiesUpdate = (newProperties: Property[]) => {
@@ -96,6 +128,7 @@ export default function Home() {
         {/* Chat Sidebar */}
         <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:block w-full md:w-96 bg-white border-r border-gray-200`}>
           <ChatSidebar 
+            userLocation={location || undefined}
             onPropertiesFound={setSearchResults}
             onPropertiesUpdate={handlePropertiesUpdate}
             onMobileMenuClose={() => setIsMobileMenuOpen(false)}
@@ -104,11 +137,15 @@ export default function Home() {
 
         {/* Property Grid */}
         <div className={`${isMobileMenuOpen ? 'hidden' : 'block'} md:block flex-1`}>
+          {/*
+            PropertyGrid receives both:
+            - properties: main list from API
+            - searchResults: filtered results from ChatSidebar interactions
+          */}
           <PropertyGrid
-            //properties={properties}
-            properties={properties}
+            properties={properties} // Main properties list
             isLoading={isLoadingProperties}
-            searchResults={searchResults}
+            searchResults={searchResults} // Results from onPropertiesFound callbacks
             onPropertySelect={setSelectedProperty}
           />
         </div>

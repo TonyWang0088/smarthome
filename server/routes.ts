@@ -76,10 +76,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatRequestSchema = z.object({
         message: z.string().min(1),
         sessionId: z.string().min(1),
-        userLocation: z.string().optional(),
+        location: z.object({
+          lat: z.number(),
+          lng: z.number(),
+          address: z.string().optional(),
+        }).optional(),
       });
 
-      const { message, sessionId, userLocation } = chatRequestSchema.parse(req.body);
+      const { message, sessionId, location } = chatRequestSchema.parse(req.body);
+      const userLocation = location?.address || null;
 
       // Update session information
       if (storage.createOrUpdateSession) {
@@ -101,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isUser: true,
         timestamp: new Date().toISOString(),
       });
-
+      console.log("[userLocation]", userLocation);
       // Process with OpenAI and get response
       const aiResponse = await processNaturalLanguageQuery(message, userLocation);
 
@@ -154,6 +159,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch chat history" });
     }
+  });
+
+  // Search properties by precise location
+  app.post("/api/properties/search-by-location", async (req, res) => {
+    // try {
+      const locationSearchSchema = z.object({
+        lat: z.number().min(-90).max(90),
+        lng: z.number().min(-180).max(180),
+        radius: z.number().min(0).max(10000).default(100)
+      });
+      
+      const { lat, lng, radius } = locationSearchSchema.parse(req.body);
+      const properties = await storage.searchPropertiesByPreciseLoc(lat, lng, radius);
+      res.json(properties);
+    // } catch (error) {
+    //   res.status(400).json({ message: "Invalid location parameters" });
+    // }
   });
 
   const httpServer = createServer(app);

@@ -3,10 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChatMessage, Property } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-import { detectUserLocation, formatLocationString } from "@/lib/geolocation";
+import { LocationData, detectUserLocation, formatLocationString } from "@/lib/geolocation";
 import { sendChatMessage, getChatHistory, type ChatRequest } from "@/lib/openai";
 import { nanoid } from "nanoid";
-
 // Tony
 // interface UseChatProps {
 //   sessionId: string;
@@ -14,11 +13,7 @@ import { nanoid } from "nanoid";
 // }
 interface UseChatProps {
   sessionId?: string;
-  userLocation?: {
-    lat: number;
-    lng: number;
-    address?: string;
-  };
+  userLocation?: LocationData,
   onPropertiesFound?: (properties: Property[]) => void;
   onPropertiesUpdate?: (properties: Property[]) => void;
 }
@@ -37,13 +32,31 @@ export function useChat(options: UseChatProps = {}) {
 
   const [userLocation, setUserLocation] = useState<string>("Vancouver");
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationCache, setLocationCache] = useState<LocationData | null>(null);
   const onPropertiesFound = options.onPropertiesFound;
 
-  // Tony
-  // // Get chat history
-  // const { data: messages = [] } = useQuery<ChatMessage[]>({
-  //   queryKey: [`/api/chat/${sessionId}`],
-  // });
+  const detectLocation = useCallback(async () => {
+    setIsDetectingLocation(true);
+    try {
+      if (locationCache) {
+        setUserLocation(locationCache.address);
+        return locationCache;
+      }
+      
+      const location = await detectUserLocation();
+      if (location) {
+        setUserLocation(location.address);
+        setLocationCache(location);
+        return location;
+      }
+    } catch (error) {
+      console.warn("Location detection failed:", error);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+    return null;
+  }, [locationCache]);
+
   // Get chat history
   const { data: chatHistory = [], isLoading: isLoadingHistory } = useQuery({
     queryKey: ["/api/chat", sessionId],
@@ -112,26 +125,31 @@ export function useChat(options: UseChatProps = {}) {
   );
   const isLoading = sendMessageMutation.isPending;
   const error = sendMessageMutation.error;
+  // Removed automatic location detection on mount
+  // to improve initial load performance
   // Detect user location on component mount
-  useEffect(() => {
-    const detectLocation = async () => {
-      setIsDetectingLocation(true);
-      try {
-        const location = await detectUserLocation();
-        if (location) {
-          const locationString = formatLocationString(location);
-          setUserLocation(locationString);
-        }
-      } catch (error) {
-        console.warn("Location detection failed:", error);
-      } finally {
-        setIsDetectingLocation(false);
-      }
-    };
+  // useEffect(() => {
+  //   //console.log("[DEBUG2]");
+  //   const detectLocation = async () => {
+  //     //console.log("[DEBUG3]");
+  //     setIsDetectingLocation(true);
+  //     try {
+  //       const location = await detectUserLocation();
+  //       console.log("[DEBUG]", location);
+  //       if (location) {
+  //         // const locationString = formatLocationString(location);
+  //         // setUserLocation(locationString);
+  //         setUserLocation(location.address)
+  //       }
+  //     } catch (error) {
+  //       console.warn("Location detection failed:", error);
+  //     } finally {
+  //       setIsDetectingLocation(false);
+  //     }
+  //   };
 
-    detectLocation();
-  }, []);
-
+  //   detectLocation();
+  // }, []);
   // return {
   //   messages,
   //   sendMessage,
@@ -148,6 +166,7 @@ export function useChat(options: UseChatProps = {}) {
     userLocation,
     setUserLocation,
     isDetectingLocation,
+    detectLocation, // Expose manual location detection
     isLoadingHistory,
     error,
   };

@@ -84,19 +84,19 @@ export default function PropertyModal({ property, onClose }: PropertyModalProps)
               </div>
             </div>
             {property.images.length > 1 && (
-              <div className="embla-thumbs">
-                <div className="embla-thumbs__container">
+              <div className="embla-thumbs overflow-x-auto py-2">
+                <div className="embla-thumbs__container flex space-x-2" style={{ minHeight: '5rem' }}>
                   {property.images.map((image, index) => (
                     <button
                       key={index}
                       type="button"
-                      className={`embla-thumbs__slide ${index === selectedIndex ? 'opacity-100' : 'opacity-50'}`}
+                      className={`embla-thumbs__slide flex-shrink-0 ${index === selectedIndex ? 'opacity-100 ring-2 ring-primary' : 'opacity-50'}`}
                       onClick={() => scrollTo(index)}
                     >
                       <img
                         src={image}
                         alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                        className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
                       />
                     </button>
                   ))}

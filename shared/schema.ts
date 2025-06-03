@@ -2,7 +2,7 @@ import { sqliteTable, text, integer, real, blob } from "drizzle-orm/sqlite-core"
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const properties = sqliteTable("properties", {
+export const properties = sqliteTable("houseproperties", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   address: text("address").notNull(),
   city: text("city").notNull(),
@@ -88,6 +88,7 @@ export const houseproperties = sqliteTable("houseproperties", {
   buildingType: text("building_type"),
   ownershipType: text("ownership_type"),
   age: integer("age"),
+  rating: real("rating"),
   description: text("description"),
   features: text("features"), // JSON array
   amenities: text("amenities"), // JSON array

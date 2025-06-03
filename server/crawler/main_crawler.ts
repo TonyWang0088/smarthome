@@ -47,7 +47,7 @@ export async function crawlHouseSigmaProperty(url: string) {
   
   // 启动浏览器
   const browser = await chromium.launch({ 
-    headless: true,
+    headless: false,
     args: browserArgs
   });
   
@@ -184,7 +184,7 @@ export async function crawlHouseSigmaProperty(url: string) {
 
     // 转换数据格式
     let houseProperty;
-    try {
+    //try {
       // 验证id_listing字段
       //const listingId = propertyData?.house?.id_listing || propertyData?.id_listing;
       if (!listingId) {
@@ -214,11 +214,11 @@ export async function crawlHouseSigmaProperty(url: string) {
         price: houseProperty.price,
         propertyType: houseProperty.propertyType
       }, null, 2));
-    } catch (error) {
-      console.error('❌ 数据转换失败:', error);
-      console.error('原始数据:', JSON.stringify(propertyData, null, 2));
-      throw new Error('房产数据转换失败');
-    }
+    // } catch (error) {
+    //   console.error('❌ 数据转换失败:', error);
+    //   console.error('原始数据:', JSON.stringify(propertyData, null, 2));
+    //   throw new Error('房产数据转换失败');
+    // }
     
     // 生成建表SQL
     const createTableSql = generateCreateTableSql();
