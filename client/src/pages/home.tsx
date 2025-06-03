@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useChat } from "@/hooks/use-chat";
 
 export default function Home() {
-  const [searchResults, setSearchResults] = useState<Property[]>([]);
+  const [searchResults, setSearchResults] = useState<Property[] | undefined>(undefined);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 

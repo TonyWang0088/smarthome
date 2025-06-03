@@ -67,16 +67,15 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
   }
 
   // Determine which properties to display
-  console.log('Received props - properties:', properties.length, 'searchResults:', searchResults.length);
+  console.log('Received props - properties:', properties.length, 'searchResults:', searchResults?.length || 0);
   
-  // Check if a search has been performed (searchResults is not empty array)
-  const hasSearched = searchResults.length > 0 || 
-                     (searchResults.length === 0 && properties.length > 0);
+  // Track if search was actually triggered
+  const hasSearchTriggered = searchResults !== undefined;
   
-  const displayProperties = hasSearched ? searchResults : properties;
+  const displayProperties = hasSearchTriggered ? (searchResults || []) : properties;
   const displayCount = displayProperties.length;
   console.log('Displaying:', displayCount, 'properties', 
-             hasSearched ? '(search results)' : '(all properties)');
+             hasSearchTriggered ? '(search results)' : '(all properties)');
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -86,7 +85,7 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2">
               <h3 className="text-lg font-semibold">
-                {hasSearched ? "Search Results" : "Properties in Vancouver"}
+                {hasSearchTriggered ? "Search Results" : "Properties in Vancouver"}
               </h3>
               <Badge className="bg-primary text-white">
                 {displayCount} Results
@@ -119,7 +118,7 @@ export default function PropertyGrid({ properties, isLoading, searchResults, onP
           {displayCount === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">
-                {!hasSearched ? 
+                {!hasSearchTriggered ? 
                   "No properties available" : 
                   "No properties match your search criteria"}
               </p>

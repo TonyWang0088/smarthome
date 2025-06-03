@@ -297,7 +297,7 @@ export default function ChatSidebar({userLocation, onPropertiesFound, onProperti
           <p className="text-xs text-blue-600 mt-1">🌍 Detecting your location...</p>
         ) : (
           <p className="text-xs text-gray-500 mt-1">
-            📍 Searching in: {currentLocation || "Unknown location"}
+            📍 Searching in: {currentLocation || "All results displayed"}
           </p>
         )}
       </div>
